@@ -1,50 +1,60 @@
 var Sequelize = require('sequelize');
-var db = new Sequelize('postgres://localhost:5432/wikistack')
-//{logging:false}
+var db = new Sequelize('postgres://localhost:5432/wikistack'
+	// , { logging: false }
+	)
 
-
-
-var Page = db.define('Page', {
+var Page = db.define('Page',{
 	title: {
 		type: Sequelize.STRING,
 		allowNull: false
 	},
 	urlTitle: {
-		type: Sequelize.STRING, 
-		allowNull: false,
+		type: Sequelize.STRING,
+		allowNull: false
 	},
 	content: {
-		type: Sequelize.TEXT, 
+		type: Sequelize.TEXT,
 		allowNull: false
 	},
 	date: {
-		type: Sequelize.DATE, 
-		 defaultValue: Sequelize.NOW
+		type: Sequelize.DATE,
+		defaultValue: Sequelize.NOW
 	},
-	status:{
+	status: {
 		type: Sequelize.ENUM('open', 'closed')
 	},
-}, 	{	
-	getterMethods:{
+	tags: {
+		type: Sequelize.ARRAY(Sequelize.TEXT)
+	}
+
+},  {
+	getterMethods: {
 		route: function(){
-		return "/wiki/" + this.urlTitle;
+			return "/wiki/" + this.urlTitle;
 		}
 	}
-	//don't invoke page.route
-
-})
+	// invoke via page.route
+});
 
 Page.hook('beforeValidate', function(page, options){
-	  if (page.title) {
+	if (page.title) {
 	    // Removes all non-alphanumeric characters from title
 	    // And make whitespace underscore
 	    page.urlTitle = page.title.replace(/\s+/g, '_').replace(/\W/g, '');
-	  } else {
-	    // Generates random 5 letter string
-	    page.urlTitle =  Math.random().toString(36).substring(2, 7);
-	  }
+  	} else {
+    	// Generates random 5 letter string
+    	page.urlTitle = Math.random().toString(36).substring(2, 7);
+  	}
 })
 
+Page.find({
+    // $overlap matches a set of possibilities
+    where : {
+        tags: {
+            $overlap: ['someTag', 'someOtherTag']
+        }
+    }    
+});
 
 var User = db.define('User', {
 	name: {
@@ -56,11 +66,17 @@ var User = db.define('User', {
 		isEmail: true,
 		allowNull: false
 	}
-})
+}, {
+	getterMethods: {
+		userroute: function(){
+			return "/users/" + this.id;
+		}
+	}
+});
 
 Page.belongsTo(User, { as: 'author' });
 
 module.exports = {
-    Page: Page,
-    User: User
-};
+	Page: Page,
+	User: User
+}

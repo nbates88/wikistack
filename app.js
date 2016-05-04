@@ -6,6 +6,7 @@ var fs = require('fs');
 var bodyParser = require('body-parser');
 var path = require('path');
 var wikiRouter = require('./routes/wiki');
+var userRouter = require('./routes/users');
 var models = require('./models')
 
 // the typical way to use express static middleware.
@@ -29,29 +30,28 @@ swig.setDefaults({
 // logging middleware
 app.use(morgan('dev'));
 
+
+models.Page.sync({force: true})
+	.then(function(){
+		return models.User.sync({force: true})
+	})
+	.then(function(){
+		app.listen(1300, function(){
+			console.log("listening on port 1300")
+		});
+	})
+	.catch(function(err){
+		console.error(err);
+	});
+
+
 // body parsing middleware
 app.use(bodyParser.urlencoded({
 	extended: true
 })); // for HTML form submits
 app.use(bodyParser.json()); // would be for AJAX requests
 
-models.Page.sync({force: true})
-	.then(function(){
-		return models.User.sync({force: true});
-	})
-	.then(function(){
-		app.listen(1300, function(){
-		console.log("listening on port 1300")
-		})
-	})
-	.catch(function(err){
-		console.error(err);
-	});
-
-// var server = app.listen(1300, function(){
-// 	console.log("listening on port 1300")
-// })
 
 // modular routing that uses io inside it
 app.use('/wiki', wikiRouter);
-
+app.use('/users', userRouter)
